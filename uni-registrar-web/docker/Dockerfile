@@ -7,12 +7,12 @@ MAINTAINER Markus Sabadello <markus@danubetech.com>
 
 ADD . /opt/universal-registrar
 ADD config.json /opt/universal-registrar/uni-registrar-web/
-RUN cd /opt/universal-registrar && mvn clean install -N -DskipTests
-RUN cd /opt/universal-registrar/uni-registrar-core && mvn clean install -N -DskipTests
-RUN cd /opt/universal-registrar/driver && mvn clean install -N -DskipTests
-RUN cd /opt/universal-registrar/driver-http && mvn clean install -N -DskipTests
-RUN cd /opt/universal-registrar/uni-registrar-local && mvn clean install -N -DskipTests
-RUN cd /opt/universal-registrar/uni-registrar-web && mvn clean install package -N -DskipTests
+RUN cd /opt/universal-registrar && mvn clean install -N
+RUN cd /opt/universal-registrar/uni-registrar-core && mvn clean install -N
+RUN cd /opt/universal-registrar/driver && mvn clean install -N
+RUN cd /opt/universal-registrar/driver-http && mvn clean install -N
+RUN cd /opt/universal-registrar/uni-registrar-local && mvn clean install -N
+RUN cd /opt/universal-registrar/uni-registrar-web && mvn clean install package -N
 
 # build image
 
@@ -25,4 +25,4 @@ COPY --from=build /opt/universal-registrar/uni-registrar-web/config.json /var/li
 # done
 
 EXPOSE 9080
-CMD java -jar /usr/local/jetty/start.jar -Djetty.http.port=9080
+CMD java -Djetty.http.port=9080 -jar /usr/local/jetty/start.jar

@@ -13,8 +13,6 @@ import java.io.IOException;
 
 public class CreateServlet extends WebUniRegistrar {
 
-	private static final long serialVersionUID = 5659041840241560964L;
-
 	protected static Logger log = LoggerFactory.getLogger(CreateServlet.class);
 
 	public static final String MIME_TYPE = "application/json";
@@ -35,17 +33,17 @@ public class CreateServlet extends WebUniRegistrar {
 		} catch (Exception ex) {
 
 			if (log.isWarnEnabled()) log.warn("Create problem: " + ex.getMessage(), ex);
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Create problem: " + ex.getMessage());
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Create problem: " + ex.getMessage());
 			return;
 		}
 
-		String driverId = request.getParameter("driverId");
+		String method = request.getParameter("method");
 
-		if (log.isInfoEnabled()) log.info("Incoming create request for driver " + driverId + ": " + createRequest);
+		if (log.isInfoEnabled()) log.info("Incoming create request for method " + method + ": " + createRequest);
 
 		if (createRequest == null) {
 
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_BAD_REQUEST, null, "No create request found.");
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_BAD_REQUEST, null, "No create request found.");
 			return;
 		}
 
@@ -56,12 +54,12 @@ public class CreateServlet extends WebUniRegistrar {
 
 		try {
 
-			createState = this.create(driverId, createRequest);
+			createState = this.create(method, createRequest);
 			createStateString = createState == null ? null : createState.toJson();
 		} catch (Exception ex) {
 
 			if (log.isWarnEnabled()) log.warn("Create problem for " + createRequest + ": " + ex.getMessage(), ex);
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Create problem for " + createRequest + ": " + ex.getMessage());
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Create problem for " + createRequest + ": " + ex.getMessage());
 			return;
 		}
 
@@ -71,12 +69,12 @@ public class CreateServlet extends WebUniRegistrar {
 
 		if (createStateString == null) {
 
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_NOT_FOUND, null, "No create state for " + createRequest + ": " + createStateString);
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_NOT_FOUND, null, "No create state for " + createRequest + ": " + createStateString);
 			return;
 		}
 
 		// write create state
 
-		WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_OK, MIME_TYPE, createStateString);
+		ServletUtil.sendResponse(response, HttpServletResponse.SC_OK, MIME_TYPE, createStateString);
 	}
 }

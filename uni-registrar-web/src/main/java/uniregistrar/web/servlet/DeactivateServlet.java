@@ -15,8 +15,6 @@ import uniregistrar.web.WebUniRegistrar;
 
 public class DeactivateServlet extends WebUniRegistrar {
 
-	private static final long serialVersionUID = 5659041840241560964L;
-
 	protected static Logger log = LoggerFactory.getLogger(DeactivateServlet.class);
 
 	public static final String MIME_TYPE = "application/json";
@@ -37,17 +35,17 @@ public class DeactivateServlet extends WebUniRegistrar {
 		} catch (Exception ex) {
 
 			if (log.isWarnEnabled()) log.warn("Request problem: " + ex.getMessage(), ex);
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Request problem: " + ex.getMessage());
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Request problem: " + ex.getMessage());
 			return;
 		}
 
-		String driverId = request.getParameter("driverId");
+		String method = request.getParameter("method");
 
-		if (log.isInfoEnabled()) log.info("Incoming deactivate request for driver " + driverId + ": " + deactivateRequest);
+		if (log.isInfoEnabled()) log.info("Incoming deactivate request for method " + method + ": " + deactivateRequest);
 
 		if (deactivateRequest == null) {
 
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_BAD_REQUEST, null, "No deactivate request found.");
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_BAD_REQUEST, null, "No deactivate request found.");
 			return;
 		}
 
@@ -58,12 +56,12 @@ public class DeactivateServlet extends WebUniRegistrar {
 
 		try {
 
-			deactiateState = this.deactivate(driverId, deactivateRequest);
+			deactiateState = this.deactivate(method, deactivateRequest);
 			deactivateStateString = deactiateState == null ? null : deactiateState.toJson();
 		} catch (Exception ex) {
 
 			if (log.isWarnEnabled()) log.warn("Deactivate problem for " + deactivateRequest + ": " + ex.getMessage(), ex);
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Deactivate problem for " + deactivateRequest + ": " + ex.getMessage());
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, null, "Deactivate problem for " + deactivateRequest + ": " + ex.getMessage());
 			return;
 		}
 
@@ -73,12 +71,12 @@ public class DeactivateServlet extends WebUniRegistrar {
 
 		if (deactivateStateString == null) {
 
-			WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_NOT_FOUND, null, "No deactivate state for " + deactivateRequest + ".");
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_NOT_FOUND, null, "No deactivate state for " + deactivateRequest + ".");
 			return;
 		}
 
 		// write deactivate state
 
-		WebUniRegistrar.sendResponse(response, HttpServletResponse.SC_OK, MIME_TYPE, deactivateStateString);
+		ServletUtil.sendResponse(response, HttpServletResponse.SC_OK, MIME_TYPE, deactivateStateString);
 	}
 }

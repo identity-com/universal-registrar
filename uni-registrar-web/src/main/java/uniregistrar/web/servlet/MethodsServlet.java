@@ -1,23 +1,21 @@
 package uniregistrar.web.servlet;
 
-import java.io.IOException;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uniregistrar.UniRegistrar;
+import uniregistrar.web.WebUniRegistrar;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class MethodsServlet extends WebUniRegistrar {
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import uniregistrar.UniRegistrar;
-import uniregistrar.web.WebUniRegistrar;
-
-public class PropertiesServlet extends WebUniRegistrar {
-
-	protected static Logger log = LoggerFactory.getLogger(PropertiesServlet.class);
+	protected static Logger log = LoggerFactory.getLogger(MethodsServlet.class);
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -33,13 +31,13 @@ public class PropertiesServlet extends WebUniRegistrar {
 
 		// execute the request
 
-		Map<String, Map<String, Object>> properties;
-		String propertiesString;
+		Set<String> methods;
+		String methodsString;
 
 		try {
 
-			properties = this.properties();
-			propertiesString = properties == null ? null : objectMapper.writeValueAsString(properties);
+			methods = this.methods();
+			methodsString = methods == null ? null : objectMapper.writeValueAsString(methods);
 		} catch (Exception ex) {
 
 			if (log.isWarnEnabled()) log.warn("Registrar reported: " + ex.getMessage(), ex);
@@ -47,18 +45,18 @@ public class PropertiesServlet extends WebUniRegistrar {
 			return;
 		}
 
-		if (log.isInfoEnabled()) log.info("Properties: " + properties);
+		if (log.isInfoEnabled()) log.info("Methods: " + methods);
 
 		// no result?
 
-		if (properties == null) {
+		if (methods == null) {
 
-			ServletUtil.sendResponse(response, HttpServletResponse.SC_NOT_FOUND, null, "No properties.");
+			ServletUtil.sendResponse(response, HttpServletResponse.SC_NOT_FOUND, null, "No methods.");
 			return;
 		}
 
 		// write result
 
-		ServletUtil.sendResponse(response, HttpServletResponse.SC_OK, UniRegistrar.PROPERTIES_MIME_TYPE, propertiesString);
+		ServletUtil.sendResponse(response, HttpServletResponse.SC_OK, UniRegistrar.METHODS_MIME_TYPE, methodsString);
 	}
 }

@@ -5,7 +5,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
@@ -42,26 +45,42 @@ public class ClientUniRegistrar implements UniRegistrar {
 	public static final URI DEFAULT_UPDATE_URI = URI.create("http://localhost:8080/1.0/update");
 	public static final URI DEFAULT_DEACTIVATE_URI = URI.create("http://localhost:8080/1.0/deactivate");
 	public static final URI DEFAULT_PROPERTIES_URI = URI.create("http://localhost:8080/1.0/properties");
+	public static final URI DEFAULT_METHODS_URI = URI.create("http://localhost:8080/1.0/methods");
 
 	private HttpClient httpClient = DEFAULT_HTTP_CLIENT;
 	private URI createUri = DEFAULT_CREATE_URI;
 	private URI updateUri = DEFAULT_UPDATE_URI;
 	private URI deactivateUri = DEFAULT_DEACTIVATE_URI;
 	private URI propertiesUri = DEFAULT_PROPERTIES_URI;
+	private URI methodsUri = DEFAULT_METHODS_URI;
 
 	public ClientUniRegistrar() {
 
 	}
 
-	@Override
-	public CreateState create(String driverId, CreateRequest createRequest) throws RegistrationException {
+	public static ClientUniRegistrar create(URI baseUri) {
 
-		if (driverId == null) throw new NullPointerException();
+		if (! baseUri.toString().endsWith("/")) baseUri = URI.create(baseUri.toString() + "/");
+
+		ClientUniRegistrar clientUniRegistrar = new ClientUniRegistrar();
+		clientUniRegistrar.setCreateUri(URI.create(baseUri.toString() + "create"));
+		clientUniRegistrar.setUpdateUri(URI.create(baseUri.toString() + "update"));
+		clientUniRegistrar.setDeactivateUri(URI.create(baseUri.toString() + "deactivate"));
+		clientUniRegistrar.setPropertiesUri(URI.create(baseUri.toString() + "properties"));
+		clientUniRegistrar.setMethodsUri(URI.create(baseUri.toString() + "methods"));
+
+		return clientUniRegistrar;
+	}
+
+	@Override
+	public CreateState create(String method, CreateRequest createRequest) throws RegistrationException {
+
+		if (method == null) throw new NullPointerException();
 		if (createRequest == null) throw new NullPointerException();
 
 		// prepare HTTP request
 
-		String uriString = this.getCreateUri().toString() + "?driverId=" + urlEncode(driverId);
+		String uriString = this.getCreateUri().toString() + "?method=" + urlEncode(method);
 
 		String body;
 
@@ -118,14 +137,14 @@ public class ClientUniRegistrar implements UniRegistrar {
 	}
 
 	@Override
-	public UpdateState update(String driverId, UpdateRequest updateRequest) throws RegistrationException {
+	public UpdateState update(String method, UpdateRequest updateRequest) throws RegistrationException {
 
-		if (driverId == null) throw new NullPointerException();
+		if (method == null) throw new NullPointerException();
 		if (updateRequest == null) throw new NullPointerException();
 
 		// prepare HTTP request
 
-		String uriString = this.getUpdateUri().toString() + "?driverId=" + urlEncode(driverId);
+		String uriString = this.getUpdateUri().toString() + "?method=" + urlEncode(method);
 
 		String body;
 
@@ -182,14 +201,14 @@ public class ClientUniRegistrar implements UniRegistrar {
 	}
 
 	@Override
-	public DeactivateState deactivate(String driverId, DeactivateRequest deactivateRequest) throws RegistrationException {
+	public DeactivateState deactivate(String method, DeactivateRequest deactivateRequest) throws RegistrationException {
 
-		if (driverId == null) throw new NullPointerException();
+		if (method == null) throw new NullPointerException();
 		if (deactivateRequest == null) throw new NullPointerException();
 
 		// prepare HTTP request
 
-		String uriString = this.getDeactivateUri().toString() + "?driverId=" + urlEncode(driverId);
+		String uriString = this.getDeactivateUri().toString() + "?method=" + urlEncode(method);
 
 		String body;
 
@@ -278,21 +297,71 @@ public class ClientUniRegistrar implements UniRegistrar {
 
 			if (httpResponse.getStatusLine().getStatusCode() > 200) {
 
-				if (log.isWarnEnabled()) log.warn("Cannot retrieve DRIVER PROPERTIES from " + uriString + ": " + httpBody);
+				if (log.isWarnEnabled()) log.warn("Cannot retrieve PROPERTIES from " + uriString + ": " + httpBody);
 				throw new RegistrationException(httpBody);
 			}
 
-			properties = (Map<String, Map<String, Object>>) objectMapper.readValue(httpBody, Map.class);
+			properties = (Map<String, Map<String, Object>>) objectMapper.readValue(httpBody, LinkedHashMap.class);
 		} catch (IOException ex) {
 
-			throw new RegistrationException("Cannot retrieve DRIVER PROPERTIES from " + uriString + ": " + ex.getMessage(), ex);
+			throw new RegistrationException("Cannot retrieve PROPERTIES from " + uriString + ": " + ex.getMessage(), ex);
 		}
 
-		if (log.isDebugEnabled()) log.debug("Retrieved DRIVER PROPERTIES (" + uriString + "): " + properties);
+		if (log.isDebugEnabled()) log.debug("Retrieved PROPERTIES (" + uriString + "): " + properties);
 
 		// done
 
 		return properties;
+	}
+
+	@Override
+	public Set<String> methods() throws RegistrationException {
+
+		// prepare HTTP request
+
+		String uriString = this.getMethodsUri().toString();
+
+		HttpGet httpGet = new HttpGet(URI.create(uriString));
+		httpGet.addHeader("Accept", UniRegistrar.METHODS_MIME_TYPE);
+
+		// execute HTTP request
+
+		Set<String> methods;
+
+		if (log.isDebugEnabled()) log.debug("Request to: " + uriString);
+
+		try (CloseableHttpResponse httpResponse = (CloseableHttpResponse) this.getHttpClient().execute(httpGet)) {
+
+			int statusCode = httpResponse.getStatusLine().getStatusCode();
+			String statusMessage = httpResponse.getStatusLine().getReasonPhrase();
+
+			if (log.isDebugEnabled()) log.debug("Response status from " + uriString + ": " + statusCode + " " + statusMessage);
+
+			if (httpResponse.getStatusLine().getStatusCode() == 404) return null;
+
+			HttpEntity httpEntity = httpResponse.getEntity();
+			String httpBody = EntityUtils.toString(httpEntity);
+			EntityUtils.consume(httpEntity);
+
+			if (log.isDebugEnabled()) log.debug("Response body from " + uriString + ": " + httpBody);
+
+			if (httpResponse.getStatusLine().getStatusCode() > 200) {
+
+				if (log.isWarnEnabled()) log.warn("Cannot retrieve METHODS from " + uriString + ": " + httpBody);
+				throw new RegistrationException(httpBody);
+			}
+
+			methods = (Set<String>) objectMapper.readValue(httpBody, LinkedHashSet.class);
+		} catch (IOException ex) {
+
+			throw new RegistrationException("Cannot retrieve METHODS from " + uriString + ": " + ex.getMessage(), ex);
+		}
+
+		if (log.isDebugEnabled()) log.debug("Retrieved METHODS (" + uriString + "): " + methods);
+
+		// done
+
+		return methods;
 	}
 
 	/*
@@ -382,5 +451,15 @@ public class ClientUniRegistrar implements UniRegistrar {
 	public void setPropertiesUri(String propertiesUri) {
 
 		this.propertiesUri = URI.create(propertiesUri);
+	}
+
+	public URI getMethodsUri() {
+
+		return this.methodsUri;
+	}
+
+	public void setMethodsUri(URI methodsUri) {
+
+		this.methodsUri = methodsUri;
 	}
 }
